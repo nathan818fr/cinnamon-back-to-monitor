@@ -30,12 +30,12 @@ class BackToMonitorExtension {
     }
 
     disable() {
-        if (this._screenWatcher) {
-            this._screenWatcher.unregister();
-        }
-
         if (this._signalManager) {
             this._signalManager.disconnectAllSignals();
+        }
+
+        if (this._screenWatcher) {
+            this._screenWatcher.unregister();
         }
     }
 
