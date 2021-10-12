@@ -1,24 +1,22 @@
-// Constants from
-// - https://github.com/linuxmint/muffin/blob/b0c3d573984f37d0c1a71c04bb5719ea7a3a8040/src/meta/common.h
-// - https://github.com/linuxmint/muffin/blob/b0c3d573984f37d0c1a71c04bb5719ea7a3a8040/src/meta/window.h
+const Meta = imports.gi.Meta;
 
-const META_MAXIMIZE_HORIZONTAL = 1 << 0;
-const META_MAXIMIZE_VERTICAL = 1 << 1;
+const META_MAXIMIZE_HORIZONTAL = Meta.MaximizeFlags.HORIZONTAL;
+const META_MAXIMIZE_VERTICAL = Meta.MaximizeFlags.VERTICAL;
 
-const META_WINDOW_TILE_TYPE_NONE = 0;
-const META_WINDOW_TILE_TYPE_TILED = 1;
-const META_WINDOW_TILE_TYPE_SNAPPED = 2;
+const META_WINDOW_TILE_TYPE_NONE = Meta.WindowTileType.NONE;
+const META_WINDOW_TILE_TYPE_TILED = Meta.WindowTileType.TILED;
+const META_WINDOW_TILE_TYPE_SNAPPED = Meta.WindowTileType.SNAPPED;
 
-const META_TILE_NONE = 0;
-const META_TILE_LEFT = 1;
-const META_TILE_RIGHT = 2;
-const META_TILE_ULC = 3;
-const META_TILE_LLC = 4;
-const META_TILE_URC = 5;
-const META_TILE_LRC = 6;
-const META_TILE_TOP = 7;
-const META_TILE_BOTTOM = 8;
-const META_TILE_MAXIMIZE = 9;
+const META_TILE_NONE = Meta.TileMode.NONE;
+const META_TILE_LEFT = Meta.TileMode.LEFT;
+const META_TILE_RIGHT = Meta.TileMode.RIGHT;
+const META_TILE_ULC = Meta.TileMode.ULC;
+const META_TILE_LLC = Meta.TileMode.LLC;
+const META_TILE_URC = Meta.TileMode.URC;
+const META_TILE_LRC = Meta.TileMode.LRC;
+const META_TILE_TOP = Meta.TileMode.TOP;
+const META_TILE_BOTTOM = Meta.TileMode.BOTTOM;
+const META_TILE_MAXIMIZE = Meta.TileMode.MAXIMIZE;
 
 function saveWindowState(metaWindow) {
     const frameRect = _getFrameRect(metaWindow);
