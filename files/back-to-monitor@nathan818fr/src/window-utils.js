@@ -24,19 +24,33 @@ function saveWindowState(metaWindow) {
     const frameRect = _getFrameRect(metaWindow);
     const workspace = metaWindow.get_workspace();
 
+    let tile, tileType, tileMode;
+    if (
+        (tileType = metaWindow.tile_type) !== META_WINDOW_TILE_TYPE_NONE &&
+        (tileMode = _computeTileMode(metaWindow)) !== META_TILE_NONE
+    ) {
+        tile = {
+            type: tileType,
+            mode: tileMode,
+        };
+    }
+
     return {
-        x: frameRect.x,
-        y: frameRect.y,
-        width: frameRect.width,
-        height: frameRect.height,
+        frame: {
+            x: frameRect.x,
+            y: frameRect.y,
+            width: frameRect.width,
+            height: frameRect.height,
+        },
         minimized: metaWindow.minimized,
-        maximized_horizontally: metaWindow.maximized_horizontally,
-        maximized_vertically: metaWindow.maximized_vertically,
-        tile_type: metaWindow.tile_type,
-        tile_mode: _computeTileMode(metaWindow),
+        maximized: {
+            horizontally: metaWindow.maximized_horizontally,
+            vertically: metaWindow.maximized_vertically,
+        },
+        tile,
         fullscreen: metaWindow.fullscreen,
         workspace: workspace ? workspace.index() : -1,
-        on_all_workspaces: metaWindow.is_on_all_workspaces(),
+        onAllWorkspaces: metaWindow.is_on_all_workspaces(),
     };
 }
 
@@ -52,36 +66,31 @@ function restoreWindowState(metaWindow, state) {
         metaWindow.minimize();
     }
 
-    // Always untile (otherwise move is impossible)
-    if (metaWindow.tile_type !== META_WINDOW_TILE_TYPE_NONE) {
-        metaWindow.tile(META_WINDOW_TILE_TYPE_NONE, false);
-    }
-
-    // Always unmaximize (otherwise move is impossible)
+    // Always untile & unmaximize (otherwise move is impossible)
+    metaWindow.tile(META_WINDOW_TILE_TYPE_NONE, false);
     metaWindow.unmaximize(META_MAXIMIZE_HORIZONTAL | META_MAXIMIZE_VERTICAL);
+    metaWindow.move_frame(false, -32768, -32768); // this call fix many strange placement bugs
 
-    if (
-        (state.maximized_horizontally && state.maximized_vertically) ||
-        state.tile_type !== META_WINDOW_TILE_TYPE_NONE
-    ) {
+    if ((state.maximized.horizontally && state.maximized.vertically) || state.tile) {
         // If it is a full maximize or tile, move only (to keep the saved unmaximized width & height)
-        metaWindow.move_frame(true, state.x, state.y);
+        metaWindow.move_frame(true, state.frame.x, state.frame.y);
     } else {
         // ... otherwise move and resize
-        metaWindow.move_resize_frame(true, state.x, state.y, state.width, state.height);
+        metaWindow.move_resize_frame(true, state.frame.x, state.frame.y, state.frame.width, state.frame.height);
     }
 
-    if (state.maximized_horizontally || state.maximized_vertically) {
+    if (state.maximized.horizontally || state.maximized.vertically) {
         // Maximize if needed
         metaWindow.maximize(
-            (state.maximized_horizontally ? META_MAXIMIZE_HORIZONTAL : 0) |
-                (state.maximized_vertically ? META_MAXIMIZE_VERTICAL : 0)
+            (state.maximized.horizontally ? META_MAXIMIZE_HORIZONTAL : 0) |
+                (state.maximized.vertically ? META_MAXIMIZE_VERTICAL : 0)
         );
     }
 
-    if (state.tile_type !== META_WINDOW_TILE_TYPE_NONE && state.tile_mode !== META_TILE_NONE) {
+    if (state.tile) {
         // Tile if needed
-        metaWindow.tile(state.tile_mode, state.tile_type === META_WINDOW_TILE_TYPE_SNAPPED);
+        metaWindow.tile(state.tile.mode, state.tile.type === META_WINDOW_TILE_TYPE_SNAPPED);
+        // TODO: Find a way to re-apply custom tile dimensions
     }
 
     if (!state.minimized) {
@@ -89,7 +98,7 @@ function restoreWindowState(metaWindow, state) {
         metaWindow.unminimize();
     }
 
-    if (state.on_all_workspaces) {
+    if (state.onAllWorkspaces) {
         metaWindow.change_workspace_by_index(-1, false, 0);
     } else if (state.workspace !== -1) {
         metaWindow.change_workspace_by_index(state.workspace, false, 0);
@@ -116,7 +125,7 @@ function _getFrameRect(metaWindow) {
 
 function _computeTileMode(metaWindow) {
     // Can't access to MetaWindow.tile_mode
-    // So try our best to re-compute it
+    // So try our best to re-compute it (unfortunately if the window is tiled with a custom size it is possible to make mistakes)
 
     if (metaWindow.tile_type === META_WINDOW_TILE_TYPE_NONE) {
         return META_TILE_NONE;
