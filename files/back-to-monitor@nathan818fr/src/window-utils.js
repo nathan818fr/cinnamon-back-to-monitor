@@ -22,6 +22,7 @@ const META_TILE_MAXIMIZE = 9;
 
 function saveWindowState(metaWindow) {
     const frameRect = _getFrameRect(metaWindow);
+    const workspace = metaWindow.get_workspace();
 
     return {
         x: frameRect.x,
@@ -34,6 +35,8 @@ function saveWindowState(metaWindow) {
         tile_type: metaWindow.tile_type,
         tile_mode: _computeTileMode(metaWindow),
         fullscreen: metaWindow.fullscreen,
+        workspace: workspace ? workspace.index() : -1,
+        on_all_workspaces: metaWindow.is_on_all_workspaces(),
     };
 }
 
@@ -84,6 +87,12 @@ function restoreWindowState(metaWindow, state) {
     if (!state.minimized) {
         // Unminimize at end if needed
         metaWindow.unminimize();
+    }
+
+    if (state.on_all_workspaces) {
+        metaWindow.change_workspace_by_index(-1, false, 0);
+    } else if (state.workspace !== -1) {
+        metaWindow.change_workspace_by_index(state.workspace, false, 0);
     }
 }
 
