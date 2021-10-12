@@ -1,3 +1,4 @@
+const ByteArray = imports.byteArray;
 const GLib = imports.gi.GLib;
 const Meta = imports.gi.Meta;
 const SignalManager = imports.misc.signalManager;
@@ -126,7 +127,7 @@ class ScreenWatcher {
 
     _captureRROutputsPosition = () => {
         let [, xrandrStdout] = GLib.spawn_command_line_sync('xrandr --current');
-        xrandrStdout = xrandrStdout ? xrandrStdout.toString() : '';
+        xrandrStdout = xrandrStdout ? ByteArray.toString(xrandrStdout) : '';
 
         // See xrandr output sources: https://github.com/freedesktop/xorg-xrandr/blob/8969b3c651eaae3e3a2370ec45f4eeae9750111d/xrandr.c#L3697
         const pattern =
