@@ -1,6 +1,5 @@
 const Meta = imports.gi.Meta;
 const Settings = imports.ui.settings;
-const Main = imports.ui.main;
 const Gdk = imports.gi.Gdk;
 const CinnamonDesktop = imports.gi.CinnamonDesktop;
 const SignalManager = imports.misc.signalManager;
@@ -12,11 +11,20 @@ const {saveWindowState, restoreWindowState} = require('src/window-utils');
 class BackToMonitorExtension {
     constructor(meta) {
         this._meta = meta;
-        this._windowsSavedStates = new Map();
-        this._monitorDisconnectedWindows = new Map();
     }
 
     enable() {
+        this._windowsSavedStates = new Map();
+        this._monitorDisconnectedWindows = new Map();
+        this._settings = {
+            rememberState: true,
+            minimize: true,
+        };
+
+        this._settingsDb = new Settings.ExtensionSettings(this._settings, this._meta.uuid);
+        this._settingsDb.bind('rememberState', 'rememberState', this._onRememberStateChange);
+        this._settingsDb.bind('minimize', 'minimize', this._onMinimizeChange);
+
         const rrScreen = CinnamonDesktop.RRScreen.new(Gdk.Screen.get_default());
         this._screenWatcher = new ScreenWatcher(global.screen, rrScreen);
         this._screenWatcher.register();
@@ -27,17 +35,41 @@ class BackToMonitorExtension {
         this._signalManager.connect(this._screenWatcher, 'monitor-unloaded', this._onMonitorUnloaded);
         this._signalManager.connect(this._screenWatcher, 'monitor-loaded', this._onMonitorLoaded);
         this._signalManager.connect(global.screen, 'window-removed', this._onWindowRemoved);
+
+        logger.log(
+            `Enabled (with settings 'rememberState': ${this._settings.rememberState}, 'minimize': ${this._settings.minimize})`
+        );
     }
 
     disable() {
         if (this._signalManager) {
             this._signalManager.disconnectAllSignals();
+            this._signalManager = null;
         }
 
         if (this._screenWatcher) {
             this._screenWatcher.unregister();
+            this._screenWatcher = null;
+        }
+
+        if (this._settingsDb) {
+            this._settingsDb.finalize();
+            this._settingsDb = null;
         }
     }
+
+    _onRememberStateChange = () => {
+        if (!this._settings.rememberState) {
+            logger.log("The 'rememberState' parameter has been set to false: delete all saved states");
+            this._windowsSavedStates.clear();
+        } else {
+            logger.log("The 'rememberState' parameter has been set to true");
+        }
+    };
+
+    _onMinimizeChange = () => {
+        logger.log(`The 'minimize' parameter has been set to ${this._settings.minimize}`);
+    };
 
     _onOutputDisconnected = (_, {outputName, pos, monitorIndex}) => {
         const time = Date.now();
@@ -50,8 +82,7 @@ class BackToMonitorExtension {
                 continue;
             }
 
-            if (true && metaWindow.can_move()) {
-                // TODO: Add an option to disable state save (globally or for some outputs)
+            if (this._settings.rememberState && metaWindow.can_move()) {
                 const windowState = callSafely(() => saveWindowState(metaWindow));
                 if (windowState) {
                     // Transform x and y to relative positions
@@ -59,7 +90,7 @@ class BackToMonitorExtension {
                     windowState.y -= pos.y;
 
                     // Save
-                    // logger.log(`Save '${metaWindow.get_title()}': ${JSON.stringify(windowState)}`); // TODO: Log this?
+                    logger.log(`Save '${metaWindow.get_title()}' from ${outputName}: ${JSON.stringify(windowState)}`);
                     let savedStates = this._windowsSavedStates.get(metaWindow);
                     if (!savedStates) {
                         this._windowsSavedStates.set(metaWindow, (savedStates = new Map()));
@@ -82,8 +113,7 @@ class BackToMonitorExtension {
             this._monitorDisconnectedWindows.delete(outputName);
 
             for (const metaWindow of disconnectedWindows) {
-                if (true && metaWindow.can_minimize()) {
-                    // TODO: Add an option to disable auto-minimize (globally or for some outputs)
+                if (this._settings.minimize && metaWindow.can_minimize()) {
                     metaWindow.minimize();
                 }
             }
@@ -96,8 +126,10 @@ class BackToMonitorExtension {
         for (const [metaWindow, savedStates] of this._windowsSavedStates.entries()) {
             let state = savedStates.get(outputName);
             if (state) {
-                // Cleanup this state and all younger states
+                // Cleanup this state
                 savedStates.delete(outputName);
+
+                // Cleanup all younger states
                 for (const [k, otherState] of savedStates.entries()) {
                     if (otherState.time >= state.time) {
                         savedStates.delete(k);
@@ -110,7 +142,7 @@ class BackToMonitorExtension {
                 windowState.y += pos.y;
 
                 // Restore
-                logger.log(`Restore '${metaWindow.get_title()}': ${JSON.stringify(windowState)}`);
+                logger.log(`Restore '${metaWindow.get_title()}' to ${outputName}: ${JSON.stringify(windowState)}`);
                 callSafely(() => restoreWindowState(metaWindow, windowState));
             }
         }

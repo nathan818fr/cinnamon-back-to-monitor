@@ -10,13 +10,13 @@ class ScreenWatcher {
     constructor(metaScreen, rrScreen) {
         this._metaScreen = metaScreen;
         this._rrScreen = rrScreen;
-        this._signalManager = new SignalManager.SignalManager(null);
-
-        this._outputsPos = new Map();
-        this._pendingMonitors = new Map();
     }
 
     register() {
+        this._outputsPos = new Map();
+        this._pendingMonitors = new Map();
+        this._signalManager = new SignalManager.SignalManager(null);
+
         this._loading = true;
         try {
             this._signalManager.connect(this._rrScreen, 'changed', this._onRRScreenChanged);
@@ -33,7 +33,10 @@ class ScreenWatcher {
     }
 
     unregister() {
-        this._signalManager.disconnectAllSignals();
+        if (this._signalManager) {
+            this._signalManager.disconnectAllSignals();
+            this._signalManager = null;
+        }
     }
 
     _onRRScreenChanged = () => {
