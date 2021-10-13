@@ -71,7 +71,7 @@ class BackToMonitorExtension {
         logger.log(`The 'minimize' parameter has been set to ${this._settings.minimize}`);
     };
 
-    _onOutputDisconnected = (_, {outputName, pos, monitorIndex}) => {
+    _onOutputDisconnected = (_, {outputName, monitorRect, monitorIndex}) => {
         const time = Date.now();
 
         const disconnectedWindows = new Set();
@@ -86,8 +86,8 @@ class BackToMonitorExtension {
                 const windowState = callSafely(() => saveWindowState(metaWindow));
                 if (windowState) {
                     // Transform x and y to relative positions
-                    windowState.x -= pos.x;
-                    windowState.y -= pos.y;
+                    windowState.x -= monitorRect.x;
+                    windowState.y -= monitorRect.y;
 
                     // Save
                     logger.log(`Save '${metaWindow.get_title()}' from ${outputName}: ${JSON.stringify(windowState)}`);
@@ -103,11 +103,11 @@ class BackToMonitorExtension {
         }
     };
 
-    _onOutputConnected = (_, {outputName, pos, monitorIndex}) => {
+    _onOutputConnected = (_, {outputName, monitorRect, monitorIndex}) => {
         this._monitorDisconnectedWindows.delete(outputName);
     };
 
-    _onMonitorUnloaded = (_, {outputName, pos, monitorIndex}) => {
+    _onMonitorUnloaded = (_, {outputName, monitorRect, monitorIndex}) => {
         const disconnectedWindows = this._monitorDisconnectedWindows.get(outputName);
         if (disconnectedWindows) {
             this._monitorDisconnectedWindows.delete(outputName);
@@ -120,7 +120,7 @@ class BackToMonitorExtension {
         }
     };
 
-    _onMonitorLoaded = (_, {outputName, pos, monitorIndex}) => {
+    _onMonitorLoaded = (_, {outputName, monitorRect, monitorIndex}) => {
         const time = Date.now();
 
         for (const [metaWindow, savedStates] of this._windowsSavedStates.entries()) {
@@ -138,12 +138,12 @@ class BackToMonitorExtension {
 
                 // Transform x and y to absolute positions
                 const windowState = state.windowState;
-                windowState.x += pos.x;
-                windowState.y += pos.y;
+                windowState.x += monitorRect.x;
+                windowState.y += monitorRect.y;
 
                 // Restore
                 logger.log(`Restore '${metaWindow.get_title()}' to ${outputName}: ${JSON.stringify(windowState)}`);
-                callSafely(() => restoreWindowState(metaWindow, windowState));
+                callSafely(() => restoreWindowState(metaWindow, windowState, monitorRect));
             }
         }
     };

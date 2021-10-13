@@ -34,12 +34,10 @@ function saveWindowState(metaWindow) {
     }
 
     return {
-        frame: {
-            x: frameRect.x,
-            y: frameRect.y,
-            width: frameRect.width,
-            height: frameRect.height,
-        },
+        x: frameRect.x,
+        y: frameRect.y,
+        width: frameRect.width,
+        height: frameRect.height,
         minimized: metaWindow.minimized,
         maximized: {
             horizontally: metaWindow.maximized_horizontally,
@@ -48,14 +46,14 @@ function saveWindowState(metaWindow) {
         tile,
         fullscreen: metaWindow.fullscreen,
         workspace: workspace ? workspace.index() : -1,
-        onAllWorkspaces: metaWindow.is_on_all_workspaces(),
+        onAllWorkspaces: false, // TODO: Find a way to access to MetaWindow.on_all_workspaces_requested
     };
 }
 
-function restoreWindowState(metaWindow, state) {
+function restoreWindowState(metaWindow, state, monitorRect) {
     if (metaWindow.fullscreen || state.fullscreen) {
-        // Can't access to MetaWindow.make_fullscreen / MetaWindow.unmake_fullscreen
-        // So fullscreen is not supported yet, skip this window
+        // Fullscreen is not supported yet, skip this window
+        // TODO: Fint a way to access to MetaWindow.make_fullscreen / MetaWindow.unmake_fullscreen
         return;
     }
 
@@ -67,14 +65,30 @@ function restoreWindowState(metaWindow, state) {
     // Always untile & unmaximize (otherwise move is impossible)
     metaWindow.tile(META_WINDOW_TILE_TYPE_NONE, false);
     metaWindow.unmaximize(META_MAXIMIZE_HORIZONTAL | META_MAXIMIZE_VERTICAL);
-    metaWindow.move_frame(false, -32768, -32768); // this call fix many strange placement bugs
 
+    // FIX: Force-move the window; this prevent many strange placement bugs
+    // (-32768 is arbitrary: need a value that is not the current one nor the state one)
+    metaWindow.move_frame(false, -32768, -32768);
+
+    // Move back to the correct monitor
     if ((state.maximized.horizontally && state.maximized.vertically) || state.tile) {
-        // If it is a full maximize or tile, move only (to keep the saved unmaximized width & height)
-        metaWindow.move_frame(true, state.frame.x, state.frame.y);
+        // If it's a full maximize or tile, only move (to keep the saved width & height)
+        const frameRect = _getFrameRect(metaWindow);
+        metaWindow.move_frame(
+            true,
+            monitorRect.x + Math.floor(monitorRect.width / 2) - Math.floor(frameRect.width / 2),
+            monitorRect.y + Math.floor(monitorRect.height / 2) - Math.floor(frameRect.height / 2)
+        );
     } else {
-        // ... otherwise move and resize
-        metaWindow.move_resize_frame(true, state.frame.x, state.frame.y, state.frame.width, state.frame.height);
+        // ... otherwise immediately move & resize correctly
+        metaWindow.move_resize_frame(true, state.x, state.y, state.width, state.height);
+    }
+
+    // Change workspace (before maximize & tile)
+    if (state.onAllWorkspaces === true) {
+        metaWindow.change_workspace_by_index(-1, false, 0);
+    } else if (state.workspace !== -1) {
+        metaWindow.change_workspace_by_index(state.workspace, false, 0);
     }
 
     if (state.maximized.horizontally || state.maximized.vertically) {
@@ -94,12 +108,6 @@ function restoreWindowState(metaWindow, state) {
     if (!state.minimized) {
         // Unminimize at end if needed
         metaWindow.unminimize();
-    }
-
-    if (state.onAllWorkspaces) {
-        metaWindow.change_workspace_by_index(-1, false, 0);
-    } else if (state.workspace !== -1) {
-        metaWindow.change_workspace_by_index(state.workspace, false, 0);
     }
 }
 
