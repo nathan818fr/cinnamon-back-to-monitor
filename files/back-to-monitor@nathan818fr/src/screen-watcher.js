@@ -65,8 +65,7 @@ class ScreenWatcher {
     };
 
     _onOutputConnected = (name, rect) => {
-        const monitorIndex = this._getMonitorIndexAt(rect.x, rect.y);
-        logger.log(`Output connected: ${name} (x: ${rect.x}, y: ${rect.y}, index: ${monitorIndex})`);
+        logger.log(`Output connected: ${name} (x: ${rect.x}, y: ${rect.y}, w: ${rect.width}, h: ${rect.height})`);
 
         const monitorChangeCancelled = this._pendingMonitors.has(name);
         if (monitorChangeCancelled) {
@@ -75,12 +74,11 @@ class ScreenWatcher {
             this._pendingMonitors.set(name, {connected: true, rect});
         }
 
-        this.emit('output-connected', {outputName: name, monitorRect: rect, monitorIndex, monitorChangeCancelled});
+        this.emit('output-connected', {outputName: name, monitorRect: rect, monitorChangeCancelled});
     };
 
     _onOutputDisconnected = (name, rect) => {
-        const monitorIndex = this._getMonitorIndexAt(rect.x, rect.y);
-        logger.log(`Output disconnected: ${name} (x: ${rect.x}, y: ${rect.y}, index: ${monitorIndex})`);
+        logger.log(`Output disconnected: ${name} (x: ${rect.x}, y: ${rect.y}, w: ${rect.width}, h: ${rect.height})`);
 
         const monitorChangeCancelled = this._pendingMonitors.has(name);
         if (monitorChangeCancelled) {
@@ -89,7 +87,7 @@ class ScreenWatcher {
             this._pendingMonitors.set(name, {connected: false, rect});
         }
 
-        this.emit('output-disconnected', {outputName: name, monitorRect: rect, monitorIndex, monitorChangeCancelled});
+        this.emit('output-disconnected', {outputName: name, monitorRect: rect, monitorChangeCancelled});
     };
 
     _onMonitorsChanged = () => {
@@ -115,17 +113,15 @@ class ScreenWatcher {
     };
 
     _onMonitorLoaded = (name, rect) => {
-        const monitorIndex = this._getMonitorIndexAt(rect.x, rect.y);
-        logger.log(`Monitor loaded: ${name} (x: ${rect.x}, y: ${rect.y}, index: ${monitorIndex})`);
+        logger.log(`Monitor loaded: ${name} (x: ${rect.x}, y: ${rect.y}, w: ${rect.width}, h: ${rect.height})`);
 
-        this.emit('monitor-loaded', {outputName: name, monitorRect: rect, monitorIndex});
+        this.emit('monitor-loaded', {outputName: name, monitorRect: rect});
     };
 
     _onMonitorUnloaded = (name, rect) => {
-        const monitorIndex = this._getMonitorIndexAt(rect.x, rect.y);
-        logger.log(`Monitor unloaded: ${name} (x: ${rect.x}, y: ${rect.y}, index: ${monitorIndex})`);
+        logger.log(`Monitor unloaded: ${name} (x: ${rect.x}, y: ${rect.y}, w: ${rect.width}, h: ${rect.height})`);
 
-        this.emit('monitor-unloaded', {outputName: name, monitorRect: rect, monitorIndex});
+        this.emit('monitor-unloaded', {outputName: name, monitorRect: rect});
     };
 
     _captureRROutputsRect = () => {
@@ -140,15 +136,6 @@ class ScreenWatcher {
             ret[name] = {x: parseInt(x), y: parseInt(y), width: parseInt(width), height: parseInt(height)};
         }
         return ret;
-    };
-
-    _getMonitorIndexAt = (x, y) => {
-        const rect = new Meta.Rectangle();
-        rect.x = x;
-        rect.y = y;
-        rect.width = 1;
-        rect.height = 1;
-        return this._metaScreen.get_monitor_index_for_rect(rect);
     };
 }
 

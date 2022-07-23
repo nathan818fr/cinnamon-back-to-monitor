@@ -6,7 +6,7 @@ const SignalManager = imports.misc.signalManager;
 const {globalLogger: logger} = require('src/logger');
 const {ScreenWatcher} = require('src/screen-watcher');
 const {callSafely} = require('src/utils');
-const {saveWindowState, restoreWindowState} = require('src/window-utils');
+const {windowSaver} = require('src/window-saver');
 
 class BackToMonitorExtension {
     constructor(meta) {
@@ -56,6 +56,8 @@ class BackToMonitorExtension {
             this._settingsDb.finalize();
             this._settingsDb = null;
         }
+
+        logger.log('Disabled');
     }
 
     _onRememberStateChange = () => {
@@ -71,19 +73,19 @@ class BackToMonitorExtension {
         logger.log(`The 'minimize' parameter has been set to ${this._settings.minimize}`);
     };
 
-    _onOutputDisconnected = (_, {outputName, monitorRect, monitorIndex}) => {
+    _onOutputDisconnected = (_, {outputName, monitorRect}) => {
         const time = Date.now();
 
         const disconnectedWindows = new Set();
         this._monitorDisconnectedWindows.set(outputName, disconnectedWindows);
 
         for (const metaWindow of global.display.list_windows(0)) {
-            if (metaWindow.get_monitor() !== monitorIndex) {
+            if (!windowSaver.isInside(metaWindow, monitorRect)) {
                 continue;
             }
 
-            if (this._settings.rememberState && metaWindow.can_move()) {
-                const windowState = callSafely(() => saveWindowState(metaWindow));
+            if (this._settings.rememberState && windowSaver.canMove(metaWindow)) {
+                const windowState = callSafely(() => windowSaver.save(metaWindow));
                 if (windowState) {
                     // Transform x and y to relative positions
                     windowState.x -= monitorRect.x;
@@ -103,11 +105,11 @@ class BackToMonitorExtension {
         }
     };
 
-    _onOutputConnected = (_, {outputName, monitorRect, monitorIndex}) => {
+    _onOutputConnected = (_, {outputName, monitorRect}) => {
         this._monitorDisconnectedWindows.delete(outputName);
     };
 
-    _onMonitorUnloaded = (_, {outputName, monitorRect, monitorIndex}) => {
+    _onMonitorUnloaded = (_, {outputName, monitorRect}) => {
         const disconnectedWindows = this._monitorDisconnectedWindows.get(outputName);
         if (disconnectedWindows) {
             this._monitorDisconnectedWindows.delete(outputName);
@@ -120,7 +122,7 @@ class BackToMonitorExtension {
         }
     };
 
-    _onMonitorLoaded = (_, {outputName, monitorRect, monitorIndex}) => {
+    _onMonitorLoaded = (_, {outputName, monitorRect}) => {
         const time = Date.now();
 
         for (const [metaWindow, savedStates] of this._windowsSavedStates.entries()) {
@@ -143,7 +145,7 @@ class BackToMonitorExtension {
 
                 // Restore
                 logger.log(`Restore '${metaWindow.get_title()}' to ${outputName}: ${JSON.stringify(windowState)}`);
-                callSafely(() => restoreWindowState(metaWindow, windowState, monitorRect));
+                callSafely(() => windowSaver.restore(metaWindow, windowState, monitorRect));
             }
         }
     };
