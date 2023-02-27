@@ -19,13 +19,13 @@ function main() {
 
     pushd "$spices_repo" >/dev/null
 
-    git checkout main
+    git checkout master
     git pull linuxmint master
     git branch -D "$EXT_UUID" 2>/dev/null || true
     git checkout -b "$EXT_UUID"
 
     rm -rf -- "$EXT_UUID"
-    rsync -a --inplace --exclude={'/.git/','/scripts/','/.prettierrc.js'} -- "${local_repo}/" "${EXT_UUID}/"
+    rsync -a --inplace --exclude={'/.git/','/.idea/','/scripts/','/.prettierrc.js'} -- "${local_repo}/" "${EXT_UUID}/"
     git add -- "$EXT_UUID"
     git status
 
