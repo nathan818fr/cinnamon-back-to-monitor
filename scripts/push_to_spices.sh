@@ -18,8 +18,8 @@ function main() {
     fi
 
     pushd "$spices_repo" >/dev/null
-    
-    git checkout master
+
+    git checkout main
     git pull linuxmint master
     git branch -D "$EXT_UUID" 2>/dev/null || true
     git checkout -b "$EXT_UUID"
@@ -32,7 +32,7 @@ function main() {
     if [[ -n "$(git status --porcelain)" ]]; then
         git commit -m "Update ${EXT_UUID}
 
-Changelog at: ${EXT_URL}/commits/master"
+Changelog at: ${EXT_URL}/commits/main"
     fi
     git push -f --set-upstream -- origin "$EXT_UUID"
 
