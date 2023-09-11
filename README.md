@@ -27,7 +27,7 @@ To download the source and install it, execute the following as a normal user:
 ```bash
 git clone git@github.com:nathan818fr/cinnamon-back-to-monitor.git
 cd cinnamon-back-to-monitor
-cinnamon-install-spice extension files/back-to-monitor@nathan818fr
+npm run install-extension
 ```
 
 ## Issues
