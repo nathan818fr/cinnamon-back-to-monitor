@@ -4,8 +4,6 @@ A Cinnamon extension to move windows back to their original location when (re-)c
 
 ![Screenshot](./screenshot.png?raw=true)
 
-> **IMPORTANT: Cinnamon 5.4+ natively provides the features of this extension.**
-
 ## Features
 
 -   Remember window locations based on monitor connection (can be switched on/off)
