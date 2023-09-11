@@ -80,7 +80,7 @@ class BackToMonitorExtension {
                 continue;
             }
 
-            if (this._settings.rememberState && windowSaver.canMove(metaWindow)) {
+            if (this._settings.rememberState && windowSaver.allowsMove(metaWindow)) {
                 const windowState = callSafely(() => windowSaver.save(metaWindow));
                 if (windowState) {
                     // Transform x and y to relative positions

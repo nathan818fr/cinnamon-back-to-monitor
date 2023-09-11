@@ -46,8 +46,10 @@ Therefore, tiled/snapped windows can only be restored to the predefined dimensio
 
 ### • Fullscreen windows are not restored
 
-The required APIs are not exposed to cinnamon extensions.<br/>
-Therefore, fullscreen windows are ignored by this extension.
+Before Cinnamon 5.4, the required APIs were not exposed to cinnamon extensions.<br/>
+In this case, the fullscreen windows will be ignored.
+
+With Cinnamon 5.4 and above, the fullscreen windows will be restored correctly!
 
 ### • The "Always on Visible Workspace" option is not restored
 

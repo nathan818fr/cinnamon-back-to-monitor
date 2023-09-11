@@ -38,14 +38,13 @@ class WindowSaverBase {
             tile,
             fullscreen: metaWindow.fullscreen,
             workspace: workspace ? workspace.index() : -1,
-            onAllWorkspaces: false, // TODO: Find a way to access to MetaWindow.on_all_workspaces_requested
+            onAllWorkspaces: false, // MetaWindow.on_all_workspaces_requested is not accessible
         };
     }
 
     restore(metaWindow, state, monitorRect) {
-        if (metaWindow.fullscreen || state.fullscreen) {
-            // Fullscreen is not supported yet, skip this window
-            // TODO: Fint a way to access to MetaWindow.make_fullscreen / MetaWindow.unmake_fullscreen
+        if (!this._supportsFullscreen() && (metaWindow.fullscreen || state.fullscreen)) {
+            // Fullscreen is not supported, skip this window
             return;
         }
 
@@ -54,7 +53,10 @@ class WindowSaverBase {
             metaWindow.minimize();
         }
 
-        // Always untile & unmaximize (otherwise move is impossible)
+        // Always unfullscreen, untile & unmaximize (otherwise move is impossible)
+        if (metaWindow.fullscreen) {
+            this._unmakeFullscreen(metaWindow);
+        }
         this._untile(metaWindow);
         metaWindow.unmaximize(META_MAXIMIZE_HORIZONTAL | META_MAXIMIZE_VERTICAL);
 
@@ -63,8 +65,8 @@ class WindowSaverBase {
         metaWindow.move_frame(false, -32768, -32768);
 
         // Move back to the correct monitor
-        if ((state.maximized.horizontally && state.maximized.vertically) || state.tile) {
-            // If it's a full maximize or tile, only move (to keep the saved width & height)
+        if ((state.maximized.horizontally && state.maximized.vertically) || state.tile || state.fullscreen) {
+            // If it's a full-maximize/tile/fullscreen, only move (to keep the saved width & height)
             const frameRect = this._getFrameRect(metaWindow);
             metaWindow.move_frame(
                 true,
@@ -76,7 +78,7 @@ class WindowSaverBase {
             metaWindow.move_resize_frame(true, state.x, state.y, state.width, state.height);
         }
 
-        // Change workspace (before maximize & tile)
+        // Change workspace (before maximize, tile & fullscreen)
         if (state.onAllWorkspaces === true) {
             this._changeWorkspaceByIndex(metaWindow, -1, false);
         } else if (state.workspace !== -1) {
@@ -96,6 +98,11 @@ class WindowSaverBase {
             this._retile(metaWindow, state.tile);
         }
 
+        if (state.fullscreen) {
+            // Fullscreen if needed
+            this._makeFullscreen(metaWindow);
+        }
+
         if (!state.minimized) {
             // Unminimize at end if needed
             metaWindow.unminimize();
@@ -112,7 +119,7 @@ class WindowSaverBase {
     /**
      * @abstract
      */
-    canMove(metaWindow) {
+    allowsMove(metaWindow) {
         throw new Error('not implemented');
     }
 
@@ -147,6 +154,27 @@ class WindowSaverBase {
     /**
      * @abstract
      */
+    _supportsFullscreen() {
+        throw new Error('not implemented');
+    }
+
+    /**
+     * @abstract
+     */
+    _makeFullscreen(metaWindow) {
+        throw new Error('not implemented');
+    }
+
+    /**
+     * @abstract
+     */
+    _unmakeFullscreen(metaWindow) {
+        throw new Error('not implemented');
+    }
+
+    /**
+     * @abstract
+     */
     _changeWorkspaceByIndex(metaWindow, workspaceIndex, append) {
         throw new Error('not implemented');
     }
@@ -164,7 +192,7 @@ class WindowSaver4_8 extends WindowSaverBase {
         return metaWindow.get_monitor() === monitorIndex;
     }
 
-    canMove(metaWindow) {
+    allowsMove(metaWindow) {
         return metaWindow.can_move();
     }
 
@@ -279,6 +307,28 @@ class WindowSaver4_8 extends WindowSaverBase {
         return bestTileMode;
     }
 
+    /**
+     * @abstract
+     */
+    _supportsFullscreen() {
+        // MetaWindow.make_fullscreen & MetaWindow.unmake_fullscreen are not accessible
+        return false;
+    }
+
+    /**
+     * @abstract
+     */
+    _makeFullscreen(metaWindow) {
+        // MetaWindow.make_fullscreen is not accessible
+    }
+
+    /**
+     * @abstract
+     */
+    _unmakeFullscreen(metaWindow) {
+        // MetaWindow.unmake_fullscreen is not accessible
+    }
+
     _changeWorkspaceByIndex(metaWindow, workspaceIndex, append) {
         metaWindow.change_workspace_by_index(workspaceIndex, append, 0);
     }
@@ -301,8 +351,8 @@ class WindowSaver5_4 extends WindowSaverBase {
         );
     }
 
-    canMove(metaWindow) {
-        return metaWindow.allows_move();
+    allowsMove(metaWindow) {
+        return metaWindow.allows_move() || metaWindow.fullscreen;
     }
 
     _getFrameRect(metaWindow) {
@@ -323,6 +373,27 @@ class WindowSaver5_4 extends WindowSaverBase {
         // Still cannot access tile_mode in Cinnamon 5.4.
         // But since tile_type doesn't exist anymore, we can't use it to detect tilling like in Cinnamon 4.8.
         return undefined;
+    }
+
+    /**
+     * @abstract
+     */
+    _supportsFullscreen() {
+        return true;
+    }
+
+    /**
+     * @abstract
+     */
+    _makeFullscreen(metaWindow) {
+        metaWindow.make_fullscreen();
+    }
+
+    /**
+     * @abstract
+     */
+    _unmakeFullscreen(metaWindow) {
+        metaWindow.unmake_fullscreen();
     }
 
     _changeWorkspaceByIndex(metaWindow, workspaceIndex, append) {
