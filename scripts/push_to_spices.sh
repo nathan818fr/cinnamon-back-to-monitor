@@ -25,7 +25,7 @@ function main() {
     git checkout -b "$EXT_UUID"
 
     rm -rf -- "$EXT_UUID"
-    rsync -a --inplace --exclude={'/.git/','/.idea/','/scripts/','/.prettierrc.js'} -- "${local_repo}/" "${EXT_UUID}/"
+    rsync -a --inplace --include={'/LICENSE','/README.md','/screenshot.png','/info.json','/files/','/files/**'} --exclude='*' -- "${local_repo}/" "${EXT_UUID}/"
     git add -- "$EXT_UUID"
     git status
 
