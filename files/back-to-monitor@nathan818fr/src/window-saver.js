@@ -109,11 +109,16 @@ class WindowSaverBase {
         }
     }
 
-    /**
-     * @abstract
-     */
-    isInside(metaWindow, monitorRect, monitorIndex) {
-        throw new Error('not implemented');
+    isInside(metaWindow, monitorRect) {
+        const frameRect = this._getFrameRect(metaWindow);
+        const frameCenterX = frameRect.x + frameRect.width / 2;
+        const frameCenterY = frameRect.y + frameRect.height / 2;
+        return (
+            frameCenterX >= monitorRect.x &&
+            frameCenterY >= monitorRect.y &&
+            frameCenterX < monitorRect.x + monitorRect.width &&
+            frameCenterY < monitorRect.y + monitorRect.height
+        );
     }
 
     /**
@@ -186,10 +191,6 @@ class WindowSaver4_8 extends WindowSaverBase {
         this.MetaWindowTileTypeNone = Meta.WindowTileType.NONE;
         this.MetaWindowTileTypeTiled = Meta.WindowTileType.TILED;
         this.MetaWindowTileTypeSnapped = Meta.WindowTileType.SNAPPED;
-    }
-
-    isInside(metaWindow, monitorRect, monitorIndex) {
-        return metaWindow.get_monitor() === monitorIndex;
     }
 
     allowsMove(metaWindow) {
@@ -337,18 +338,6 @@ class WindowSaver4_8 extends WindowSaverBase {
 class WindowSaver5_4 extends WindowSaverBase {
     constructor() {
         super('5.4+');
-    }
-
-    isInside(metaWindow, monitorRect) {
-        const frameRect = this._getFrameRect(metaWindow);
-        const frameCenterX = frameRect.x + frameRect.width / 2;
-        const frameCenterY = frameRect.y + frameRect.height / 2;
-        return (
-            frameCenterX >= monitorRect.x &&
-            frameCenterY >= monitorRect.y &&
-            frameCenterX < monitorRect.x + monitorRect.width &&
-            frameCenterY < monitorRect.y + monitorRect.height
-        );
     }
 
     allowsMove(metaWindow) {

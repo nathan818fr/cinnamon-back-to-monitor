@@ -94,7 +94,7 @@ class ScreenWatcher {
             this._pendingMonitors.set(name, {connected: true, rect});
         }
 
-        this.emit('output-connected', {outputName: name, monitorRect: rect, monitorIndex, monitorChangeCancelled});
+        this.emit('output-connected', {outputName: name, monitorRect: rect, monitorChangeCancelled});
     };
 
     _onOutputDisconnected = (name, rect) => {
@@ -110,7 +110,7 @@ class ScreenWatcher {
             this._pendingMonitors.set(name, {connected: false, rect});
         }
 
-        this.emit('output-disconnected', {outputName: name, monitorRect: rect, monitorIndex, monitorChangeCancelled});
+        this.emit('output-disconnected', {outputName: name, monitorRect: rect, monitorChangeCancelled});
     };
 
     _onMonitorsChanged = () => {
@@ -141,7 +141,7 @@ class ScreenWatcher {
             `Monitor loaded: ${name} (x: ${rect.x}, y: ${rect.y}, w: ${rect.width}, h: ${rect.height}, index: ${monitorIndex})`
         );
 
-        this.emit('monitor-loaded', {outputName: name, monitorRect: rect, monitorIndex});
+        this.emit('monitor-loaded', {outputName: name, monitorRect: rect});
     };
 
     _onMonitorUnloaded = (name, rect) => {
@@ -150,7 +150,7 @@ class ScreenWatcher {
             `Monitor unloaded: ${name} (x: ${rect.x}, y: ${rect.y}, w: ${rect.width}, h: ${rect.height}, index: ${monitorIndex})`
         );
 
-        this.emit('monitor-unloaded', {outputName: name, monitorRect: rect, monitorIndex});
+        this.emit('monitor-unloaded', {outputName: name, monitorRect: rect});
     };
 
     _captureRROutputsRect = () => {
